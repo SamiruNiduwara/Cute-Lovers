@@ -55,17 +55,17 @@ The project focuses on creating a fun user experience rather than being a large-
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="screenshots/01-logging-screen.png" width="220">
-  <img src="screenshots/02-home-screen.png" width="220">
-  <img src="screenshots/03-love-letters.png" width="220">
-  <img src="screenshots/04-anniversary.png" width="220">
+  <img src="screenshots/01-login-screen.jpeg" width="220">
+  <img src="screenshots/02-home-screen.jpeg" width="220">
+  <img src="screenshots/03-love-letters.jpeg" width="220">
+  <img src="screenshots/04-anniversary.jpeg" width="220">
 </p>
 
 <p align="center">
-  <img src="screenshots/05-birthday.png" width="220">
-  <img src="screenshots/06-quotes.png" width="220">
-  <img src="screenshots/07-little-games.png" width="220">
-  <img src="screenshots/08-memory-timeline.png" width="220">
+  <img src="screenshots/05-birthday.jpeg" width="220">
+  <img src="screenshots/06-quotes.jpeg" width="220">
+  <img src="screenshots/07-little-games.jpeg" width="220">
+  <img src="screenshots/08-memory-timeline.jpeg" width="220">
 </p>
 
 
