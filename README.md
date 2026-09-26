@@ -51,6 +51,12 @@ Cute Lovers was created as my **first Android application project** while learni
 
 The project focuses on creating a fun user experience rather than being a large-scale production application.
 
+## 📥 Download
+
+**[⬇️ Download Cute Lovers v1.0.0](../../releases/latest)**
+
+> Download the latest APK from GitHub Releases and install it on your Android device.
+
 
 ## 📱 Screenshots
 
