@@ -106,4 +106,19 @@ Allow Gradle to synchronize, connect an Android device or start an emulator, and
 
 **Samiru Ninduwara**
 
+## 🎓 What I Learned
+
+Building Cute Lovers as my first Android application helped me gain practical experience with:
+
+* 📱 Android application development using Kotlin and Android Studio
+* 🌐 Integrating HTML, CSS, and JavaScript with Android WebView
+* 🎨 Designing and organizing a user-friendly mobile interface
+* 🧩 Structuring an Android project and managing app resources
+* ⏰ Working with reminders and date-based features
+* 🎮 Building interactive app features and mini games
+* 🔧 Using Git and GitHub for version control and project management
+
+This project was created as a fun and creative learning experience, and it gave me a foundation for building more advanced Android applications in the future.
+
+
 First Android Application Project
