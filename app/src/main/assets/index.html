@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>For You</title>
+
+<!-- installable app (Android + iOS "Add to Home Screen") -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#B33F56">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="For You">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#1B1420;
+    --card:#251C2C;
+    --ink:#F3E9EE;
+    --ink-soft:#B8A6B4;
+    --rose:#E0708C;
+    --rose-dark:#F0A0B6;
+    --gold:#E3BE73;
+    --sage:#8FBF8A;
+    --line: rgba(255,255,255,0.14);
+    --icon-bg:#3A2C40;
+    --overlay-bg: rgba(27,20,32,0.96);
+    --overlay-bg-strong: rgba(37,28,44,0.95);
+    --tint-sage: rgba(143,191,138,0.16);
+    --shadow-soft: rgba(0,0,0,0.35);
+    --shadow-med: rgba(0,0,0,0.5);
+    --stage-bg: linear-gradient(160deg,#0e0a12 0%, #1c1420 45%, #241a25 100%);
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: var(--stage-bg);
+    font-family:'Work Sans', sans-serif;
+    color:var(--ink);
+    overflow:hidden;
+  }
+  #stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  .phone{
+    width:100%; max-width:420px; height:100%; max-height:900px;
+    background:var(--paper); position:relative; overflow:hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+    display:flex; flex-direction:column;
+  }
+  @media (min-width:440px){ .phone{ border-radius:36px; height:88vh; } }
+
+  .logout-btn{ position:absolute; top:18px; right:18px; width:40px; height:40px; border-radius:50%;
+    border:1px solid var(--line); background:var(--card); color:var(--ink); display:flex; align-items:center;
+    justify-content:center; font-size:16px; cursor:pointer; z-index:6; box-shadow:0 4px 10px var(--shadow-soft);
+    transition: transform .15s ease, background .3s ease; }
+  .logout-btn:active{ transform:scale(0.88); }
+
+  .screen{ position:absolute; inset:0; display:none; flex-direction:column; padding:28px 26px 46px; overflow-y:auto; }
+  .screen.active{ display:flex; }
+
+  .app-footer{ position:absolute; left:0; right:0; bottom:0; text-align:center; font-size:10.5px;
+    color:var(--ink-soft); padding:8px 10px 10px; z-index:5; pointer-events:none;
+    background:linear-gradient(to top, var(--paper) 55%, transparent); }
+
+  .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-shrink:0; }
+  .back-btn{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--ink); cursor:pointer; }
+  .topbar h2{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:24px; margin:0; }
+
+  #home{ justify-content:center; }
+
+  .screen-body{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .home-head{ text-align:left; margin-bottom:8px; flex-shrink:0; }
+  .eyebrow{ font-size:13px; color:var(--rose); letter-spacing:0.3px; margin:0 0 6px; }
+  .home-head h1{ font-family:'Cormorant Garamond', serif; font-style:italic; font-weight:600; font-size:40px; line-height:1.05; margin:0 0 10px; color:var(--ink); }
+  .home-head p{ margin:0; color:var(--ink-soft); font-size:15px; max-width:30ch; }
+
+  .float-hearts{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+  .float-hearts span{ position:absolute; bottom:-30px; font-size:18px; opacity:0.18; animation: drift 14s linear infinite; color:var(--rose); }
+  @keyframes drift{ 0%{ transform:translateY(0) translateX(0) rotate(0deg); opacity:0; } 10%{ opacity:0.22; } 100%{ transform:translateY(-680px) translateX(20px) rotate(25deg); opacity:0; } }
+
+  .float-hearts-mini{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .float-hearts-mini span{ position:absolute; bottom:-30px; font-size:14px; opacity:0.14; animation: drift 13s linear infinite; color:var(--rose); }
+  .screen .float-hearts-mini ~ *, .screen .float-bday-mini ~ *{ position:relative; z-index:1; }
+
+  .float-bday-mini{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .float-bday-mini span{ position:absolute; bottom:-30px; opacity:0.5; animation: drift 12s linear infinite; }
+
+  .menu{ margin-top:22px; display:flex; flex-direction:column; position:relative; z-index:1; }
+  .ticket{
+    position:relative; background:var(--card); border:1px solid var(--line); padding:18px 18px; margin-bottom:14px;
+    display:flex; align-items:center; gap:14px; cursor:pointer; text-align:left;
+    border-radius:16px; box-shadow: 0 8px 20px var(--shadow-soft); transition: transform .15s ease, border-color .15s ease;
+  }
+  .ticket:active{ transform: scale(0.98); }
+  .ticket .icon{ font-size:22px; flex-shrink:0; width:46px; height:46px; border-radius:50%; background:var(--icon-bg); display:flex; align-items:center; justify-content:center; }
+  .ticket .txt strong{ display:block; font-size:16.5px; font-weight:600; margin-bottom:2px; }
+  .ticket .txt span{ font-size:13px; color:var(--ink-soft); }
+
+  #letter{ align-items:center; justify-content:flex-start; }
+  .envelope-wrap{ width:100%; display:flex; flex-direction:column; align-items:center; margin-top:10px; }
+  .envelope{ width:220px; height:150px; position:relative; cursor:pointer; margin-bottom:18px; }
+  .env-body{ position:absolute; inset:0; background:var(--rose); border-radius:6px; box-shadow: 0 12px 26px rgba(143,47,66,0.35); }
+  .env-flap{ position:absolute; top:0; left:0; width:100%; height:75px; background:var(--rose-dark);
+    clip-path: polygon(0 0, 100% 0, 50% 88%); transform-origin: top; transition: transform .6s cubic-bezier(.4,0,.2,1); }
+  .envelope.open .env-flap{ transform: rotateX(160deg); }
+  .env-seal{ position:absolute; top:56px; left:50%; transform:translateX(-50%); width:34px; height:34px; border-radius:50%;
+    background:var(--gold); display:flex; align-items:center; justify-content:center; font-size:15px; color:#fff;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.25); transition: opacity .3s ease; }
+  .envelope.open .env-seal{ opacity:0; }
+  .tap-hint{ font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
+  .letter-paper{ width:100%; background:var(--card); border:1px solid var(--line); padding:26px 22px; border-radius:4px; display:none; box-shadow: 0 10px 30px var(--shadow-soft); }
+  .letter-paper.show{ display:block; }
+  .letter-paper p{ font-family:'Cormorant Garamond', serif; font-size:19px; line-height:1.6; color:var(--ink); margin:0 0 14px;
+    opacity:0; transform:translateY(6px); animation: rise .6s ease forwards; }
+  .letter-paper .sig{ font-style:italic; text-align:right; color:var(--rose-dark); }
+  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+
+  #reasons{ align-items:center; justify-content:center; text-align:center; }
+  .reason-card{ position:relative; width:100%; min-height:180px; background:var(--card); border:1px solid var(--line); border-radius:8px;
+    display:flex; align-items:center; justify-content:center; padding:30px 22px; margin-bottom:22px; box-shadow: 0 10px 30px var(--shadow-soft); }
+  .reason-card p{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:23px; line-height:1.4; color:var(--ink); margin:0; }
+  .reason-count{ font-size:12.5px; color:var(--ink-soft); margin-bottom:16px; }
+
+  .btn{ border:none; cursor:pointer; font-family:'Work Sans', sans-serif; font-weight:600; font-size:15px;
+    padding:14px 20px; border-radius:30px; background:var(--rose); color:#fff; box-shadow: 0 8px 18px rgba(179,63,86,0.3); transition: transform .12s ease; }
+  .btn:active{ transform: scale(0.96); }
+  .btn.secondary{ background:transparent; color:var(--rose-dark); box-shadow:none; border:1.5px solid var(--rose); }
+  .btn:disabled{ opacity:0.5; }
+
+  @keyframes hugPop{ 0%{ transform:scale(0) rotate(0deg); } 50%{ transform:scale(1.25) rotate(-6deg); } 75%{ transform:scale(1.05) rotate(4deg); } 100%{ transform:scale(1.1) rotate(0deg); } }
+
+  .letter-tile{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+    margin-bottom:12px; cursor:pointer; display:flex; align-items:center; gap:14px; transition: transform .12s ease; }
+  .letter-tile:active{ transform:scale(0.98); }
+  .letter-tile .icon{ font-size:22px; flex-shrink:0; width:42px; height:42px; border-radius:50%; background:var(--icon-bg);
+    display:flex; align-items:center; justify-content:center; }
+  .letter-tile .txt strong{ display:block; font-size:15.5px; font-weight:600; margin-bottom:2px; }
+  .letter-tile .txt span{ font-size:12.5px; color:var(--ink-soft); }
+  .letter-tile .read-badge{ position:absolute; top:10px; right:12px; width:7px; height:7px; border-radius:50%; background:var(--sage); opacity:0; }
+  .letter-tile.read .read-badge{ opacity:1; }
+
+  #timeline{ align-items:stretch; }
+  .tl-intro{ font-size:13.5px; color:var(--ink-soft); margin:0 0 18px; }
+  .tl-list{ position:relative; padding-left:22px; }
+  .tl-list::before{ content:''; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--line); }
+  .tl-item{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+    margin-bottom:14px; box-shadow:0 6px 18px var(--shadow-soft); }
+  .tl-item::before{ content:''; position:absolute; left:-22px; top:18px; width:11px; height:11px; border-radius:50%;
+    background:var(--rose); border:2px solid var(--card); box-shadow:0 0 0 2px var(--line); }
+  .tl-item .tl-date{ font-size:11.5px; letter-spacing:0.4px; text-transform:uppercase; color:var(--rose); font-weight:700; margin-bottom:4px; }
+  .tl-item .tl-title{ display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; margin-bottom:4px; }
+  .tl-item .tl-text{ font-size:14px; color:var(--ink-soft); line-height:1.5; margin:0; }
+  .tl-item .tl-actions{ position:absolute; top:10px; right:10px; display:flex; gap:2px; }
+  .tl-item .tl-edit, .tl-item .tl-del{ border:none; background:transparent; color:var(--ink-soft);
+    font-size:13px; cursor:pointer; opacity:0.6; padding:4px; }
+  .tl-item .tl-edit:active, .tl-item .tl-del:active{ opacity:1; }
+  .tl-item.editing{ border-color:var(--rose); }
+  .tl-empty{ text-align:center; font-size:14px; color:var(--ink-soft); padding:30px 10px; margin:0 0 6px; }
+  .tl-add-btn{ width:100%; margin-top:4px; }
+  .tl-form{ display:none; flex-direction:column; gap:10px; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:16px; margin-bottom:18px; }
+  .tl-form.show{ display:flex; }
+  .tl-form-heading{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:18px; color:var(--rose-dark); margin:0; }
+  .tl-form input, .tl-form textarea{ width:100%; padding:11px 12px; border-radius:8px; border:1.5px solid var(--line);
+    font-family:'Work Sans',sans-serif; font-size:14.5px; background:var(--paper); color:var(--ink); resize:vertical; }
+  .tl-form input:focus, .tl-form textarea:focus{ outline:none; border-color:var(--rose); }
+  .tl-form-row{ display:flex; gap:10px; }
+  .tl-form-row .btn{ flex:1; padding:11px; font-size:13.5px; }
+  .tl-icon-picker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .tl-icon-chip{ width:38px; height:38px; border-radius:50%; border:1.5px solid var(--line); background:var(--paper);
+    font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition: transform .12s ease, border-color .2s ease, background .2s ease; }
+  .tl-icon-chip:active{ transform:scale(0.92); }
+  .tl-icon-chip.selected{ border-color:var(--rose); background:var(--rose); box-shadow:0 6px 14px rgba(179,63,86,0.3); }
+
+  .game-tile{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:14px; cursor:pointer; display:flex; align-items:center; gap:14px; }
+  .game-tile .icon{ font-size:28px; }
+  .game-tile strong{ display:block; font-size:16px; margin-bottom:2px; }
+  .game-tile span{ font-size:13px; color:var(--ink-soft); }
+
+  .anniv-since-row{ display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:10px; flex-shrink:0; }
+  .anniv-since{ text-align:center; font-size:13px; color:var(--ink-soft); }
+  .edit-date-btn{ border:none; background:transparent; cursor:pointer; font-size:14px; opacity:0.65; padding:2px 4px; line-height:1; }
+  .edit-date-btn:active{ opacity:1; }
+  .date-editor{ display:none; flex-direction:column; align-items:stretch; gap:10px; background:var(--card);
+    border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; flex-shrink:0; }
+  .date-editor.show{ display:flex; }
+  .date-editor-label{ font-size:12.5px; color:var(--ink-soft); }
+  .date-input{ padding:11px 12px; border-radius:8px; border:1.5px solid var(--line); font-family:'Work Sans',sans-serif;
+    font-size:15px; background:var(--paper); color:var(--ink); width:100%; }
+  .date-input:focus{ outline:none; border-color:var(--rose); }
+  .date-editor-actions{ display:flex; gap:10px; }
+  .date-editor-actions .btn{ flex:1; padding:10px 14px; font-size:13.5px; }
+  .anniv-hero{ text-align:center; margin-bottom:16px; flex-shrink:0; }
+  .anniv-days{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:56px; line-height:1; color:var(--rose-dark); }
+  .anniv-days-label{ font-size:13px; color:var(--ink-soft); letter-spacing:0.4px; margin-top:2px; }
+
+  .anniv-live{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:22px; flex-shrink:0; }
+  .anniv-unit{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 2px; text-align:center; }
+  .anniv-unit b{ display:block; font-size:16px; font-weight:700; color:var(--ink); }
+  .anniv-unit span{ font-size:9px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.3px; }
+
+  .anniv-ring-wrap{ position:relative; width:140px; height:140px; margin:0 auto 8px; flex-shrink:0; }
+  .anniv-ring{ width:100%; height:100%; transform:rotate(-90deg); }
+  .ring-track{ fill:none; stroke:var(--line); stroke-width:10; }
+  .ring-progress{ fill:none; stroke:var(--rose); stroke-width:10; stroke-linecap:round;
+    stroke-dasharray:326.7256; stroke-dashoffset:326.7256; transition: stroke-dashoffset 0.6s ease; }
+  .ring-progress.gold{ stroke:var(--gold); }
+  .anniv-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .anniv-ring-center b{ font-size:20px; color:var(--rose-dark); }
+  .anniv-ring-center span{ font-size:10px; color:var(--ink-soft); text-align:center; line-height:1.2; margin-top:2px; }
+  .anniv-next{ text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:20px; flex-shrink:0; }
+
+  .milestones-label{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:10px; flex-shrink:0; }
+  .milestones{ display:flex; flex-direction:column; gap:8px; }
+  .milestone{ display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .milestone.reached{ background:var(--tint-sage); border-color:rgba(124,148,115,0.3); }
+  .milestone .m-icon{ width:30px; height:30px; border-radius:50%; background:var(--icon-bg); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .milestone.reached .m-icon{ background:var(--sage); color:#fff; }
+  .milestone .m-txt strong{ display:block; font-size:14.5px; }
+  .milestone .m-txt span{ font-size:12px; color:var(--ink-soft); }
+
+  #puzzleArea{ flex:1; display:flex; flex-direction:column; }
+  .puzzle-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:30px 20px; text-align:center; margin-bottom:16px; }
+  .puzzle-emojis{ font-size:44px; margin-bottom:6px; letter-spacing:4px; }
+  .puzzle-progress{ font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .puzzle-input{ width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid var(--line); font-size:16px; font-family:'Work Sans',sans-serif; margin-bottom:12px; background:var(--card); color:var(--ink); }
+  .puzzle-input:focus{ outline:none; border-color:var(--rose); }
+  .puzzle-feedback{ font-size:14px; min-height:20px; margin-bottom:10px; font-weight:600; }
+  .puzzle-feedback.correct{ color:var(--sage); }
+  .puzzle-feedback.wrong{ color:var(--rose-dark); }
+  .puzzle-row{ display:flex; gap:10px; }
+  .puzzle-row .btn{ flex:1; }
+
+  #pickerArea{ flex:1; display:flex; flex-direction:column; align-items:center; width:100%; }
+  .picker-instructions{ font-size:13.5px; color:var(--ink-soft); text-align:center; margin:0 0 18px; }
+  .picker-chips{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-bottom:20px; flex-shrink:0; }
+  .picker-chip{ border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-family:'Work Sans',sans-serif;
+    font-weight:600; font-size:13.5px; padding:14px 8px; border-radius:12px; cursor:pointer;
+    transition: transform .12s ease, background .2s ease, border-color .2s ease, color .2s ease; }
+  .picker-chip:active{ transform:scale(0.96); }
+  .picker-chip.selected{ border-color:var(--rose); background:var(--rose); color:#fff; box-shadow:0 8px 18px rgba(179,63,86,0.3); }
+  .picker-reveal{ width:100%; min-height:170px; margin-bottom:20px; }
+  .picker-reveal-inner{ position:relative; width:100%; min-height:170px; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; box-shadow:0 10px 30px var(--shadow-soft); display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:26px 22px; }
+  .picker-placeholder{ color:var(--ink-soft); font-size:14px; }
+  .picker-idea{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:22px; line-height:1.4; color:var(--ink);
+    margin:0; opacity:0; transform:translateY(10px) scale(0.97); animation: rise .45s ease forwards; }
+  .picker-idea-cat{ display:block; font-family:'Work Sans',sans-serif; font-style:normal; font-size:11px; letter-spacing:0.6px;
+    text-transform:uppercase; color:var(--rose); margin-bottom:10px; font-weight:700; }
+  .picker-actions{ display:flex; gap:10px; width:100%; }
+  .picker-actions .btn{ flex:1; }
+
+  .letter-paper-wrap{ position:relative; width:100%; }
+  .icon-copy-btn{ position:absolute; top:10px; right:10px; width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--rose-dark); box-shadow:0 4px 10px var(--shadow-soft); transition: transform .15s ease; z-index:3; }
+  .icon-copy-btn:active{ transform:scale(0.85); }
+  .copy-toast{ position:absolute; left:50%; bottom:26px; transform:translateX(-50%) translateY(14px);
+    background:var(--ink); color:var(--paper); padding:10px 20px; border-radius:30px; font-size:13px; font-weight:600;
+    box-shadow:0 10px 24px rgba(0,0,0,0.3); opacity:0; pointer-events:none; transition: opacity .25s ease, transform .25s ease;
+    z-index:60; white-space:nowrap; max-width:85%; text-overflow:ellipsis; overflow:hidden; }
+  .copy-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .reminder-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--card);
+    border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:18px; flex-shrink:0; }
+  .reminder-text strong{ display:block; font-size:13.5px; font-weight:600; color:var(--ink); }
+  .reminder-text span{ font-size:11.5px; color:var(--ink-soft); }
+  .cute-switch{ position:relative; width:50px; height:28px; border-radius:30px; background:var(--line); cursor:pointer;
+    flex-shrink:0; border:none; padding:0; transition: background .25s ease; }
+  .cute-switch.on{ background:var(--rose); }
+  .cute-switch-thumb{ position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:11px; box-shadow:0 2px 5px rgba(0,0,0,.25);
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .cute-switch.on .cute-switch-thumb{ transform:translateX(22px); }
+
+  #slotArea{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .reels{ display:flex; gap:10px; margin-bottom:24px; }
+  .reel{ width:64px; height:80px; background:var(--card); border:2px solid var(--line); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:34px; overflow:hidden; }
+  .compliment-box{ min-height:70px; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 10px; margin-bottom:20px; }
+  .compliment-box p{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:22px; color:var(--ink); margin:0; opacity:0; transition:opacity .4s ease; }
+  .compliment-box p.show{ opacity:1; }
+
+  #resultOverlay{ position:absolute; inset:0; background:var(--overlay-bg); display:none; align-items:center; justify-content:center; flex-direction:column; text-align:center; gap:14px; padding:20px; border-radius:10px; }
+  #resultOverlay.show{ display:flex; }
+  #resultOverlay h3{ font-family:'Cormorant Garamond', serif; font-size:26px; margin:0; }
+
+  ::-webkit-scrollbar{ display:none; }
+
+  #gate{ align-items:center; justify-content:center; text-align:center; }
+  .gate-wrap{ width:100%; display:flex; flex-direction:column; align-items:stretch; position:relative; z-index:1; }
+  .gate-icon{ font-size:38px; text-align:center; margin-bottom:10px; }
+  .gate-title{ font-family:'Cormorant Garamond', serif; font-style:italic; font-weight:600; font-size:32px;
+    line-height:1.15; margin:0 0 8px; color:var(--ink); text-align:center; }
+  .gate-sub{ font-size:14px; color:var(--ink-soft); text-align:center; margin:0 0 30px; }
+  .gate-field{ margin-bottom:18px; text-align:left; }
+  .gate-field label{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:7px; letter-spacing:0.2px; }
+  .gate-input{ width:100%; padding:14px 14px; border-radius:10px; border:1.5px solid var(--line);
+    font-family:'Work Sans', sans-serif; font-size:15.5px; background:var(--card); color:var(--ink); transition: border-color .2s ease; }
+  .gate-input:focus{ outline:none; border-color:var(--rose); }
+  .gate-pills{ display:flex; gap:10px; }
+  .gate-pill{ flex:1; padding:14px 10px; border-radius:10px; border:1.5px solid var(--line); background:var(--card);
+    color:var(--ink); font-family:'Work Sans', sans-serif; font-weight:600; font-size:14.5px; cursor:pointer;
+    transition: transform .12s ease, background .2s ease, border-color .2s ease, color .2s ease; }
+  .gate-pill:active{ transform:scale(0.96); }
+  .gate-pill.selected{ border-color:var(--rose); background:var(--rose); color:#fff; box-shadow:0 8px 18px rgba(179,63,86,0.3); }
+  .gate-error{ font-size:13px; color:var(--rose-dark); min-height:18px; margin-bottom:8px; text-align:center; transition: opacity .2s ease; }
+  .gate-submit{ width:100%; margin-top:10px; padding:15px; font-size:15.5px; }
+
+  #welcome-overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    z-index:50; background:var(--paper); opacity:0; pointer-events:none; transition: opacity .5s ease; }
+  #welcome-overlay.show{ opacity:1; pointer-events:auto; }
+  .welcome-card{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:20px; position:relative; z-index:1; }
+  .welcome-icon{ font-size:56px; line-height:1; transform:scale(0); animation: hugPop 1s cubic-bezier(.34,1.56,.64,1) forwards; }
+  .welcome-msg{ font-family:'Cormorant Garamond', serif; font-style:italic; font-weight:600; font-size:30px;
+    color:var(--rose-dark); text-align:center; margin:0; opacity:0; transform:translateY(8px); animation: rise .6s ease .2s forwards; }
+  .welcome-sub{ font-size:13.5px; color:var(--ink-soft); text-align:center; margin:0; opacity:0;
+    transform:translateY(8px); animation: rise .6s ease .4s forwards; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="phone">
+    <button class="logout-btn" id="logoutBtn" onclick="logoutUser()" aria-label="Log out" style="display:none;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v9"></path>
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+      </svg>
+    </button>
+    <div class="copy-toast" id="copyToast"></div>
+    <div class="app-footer">© Samiru Ninduwara</div>
+
+    <!-- ENTRY GATE -->
+    <div class="screen active" id="gate">
+      <div class="gate-wrap">
+        <div class="gate-icon">💌</div>
+        <h1 class="gate-title">Hi there</h1>
+        <p class="gate-sub">Before you go in, tell me a little about you.</p>
+
+        <div class="gate-field">
+          <label for="gateName">Your name</label>
+          <input type="text" id="gateName" class="gate-input" placeholder="e.g. Alex" maxlength="24" autocomplete="off">
+        </div>
+
+        <div class="gate-field">
+          <label>You are a...</label>
+          <div class="gate-pills">
+            <button type="button" class="gate-pill" id="pillGirl" onclick="selectGender('girl')">👧 Girl</button>
+            <button type="button" class="gate-pill" id="pillBoy" onclick="selectGender('boy')">👦 Boy</button>
+          </div>
+        </div>
+
+        <div class="gate-field">
+          <label for="gateAge">Your age</label>
+          <input type="number" id="gateAge" class="gate-input" placeholder="e.g. 24" min="1" max="120" inputmode="numeric">
+        </div>
+
+        <div class="gate-error" id="gateError"></div>
+        <button class="btn gate-submit" onclick="submitGate()">Continue</button>
+      </div>
+    </div>
+
+    <!-- WELCOME OVERLAY -->
+    <div id="welcome-overlay">
+      <div class="welcome-card">
+        <div class="welcome-icon" id="welcomeIcon">💗</div>
+        <p class="welcome-msg" id="welcomeMsg">Welcome!</p>
+        <p class="welcome-sub" id="welcomeSub">so glad you're here</p>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div class="screen" id="home">
+      <div class="float-hearts" id="floatHearts"></div>
+      <div class="home-head">
+        <p class="eyebrow">a little something for</p>
+        <h1 id="nameHeading">My Dear Users💖</h1>
+        <p>Tap around — there are few letters, a few reasons, and a silly games in here for you.</p>
+      </div>
+      <div class="menu">
+        <div class="ticket" onclick="showScreen('lettersList')">
+          <div class="icon">💌</div>
+          <div class="txt"><strong>Open your letters</strong><span>10 little letters, pick one</span></div>
+        </div>
+        <div class="ticket" onclick="showScreen('anniversary')">
+          <div class="icon">📅</div>
+          <div class="txt"><strong>Our anniversary</strong><span>Every day we've been together</span></div>
+        </div>
+        <div class="ticket" onclick="showScreen('birthday')">
+          <div class="icon">🎂</div>
+          <div class="txt"><strong id="birthdayTicketLabel">Her birthday</strong><span>Countdown and cake</span></div>
+        </div>
+        <div class="ticket" onclick="showScreen('reasons')">
+          <div class="icon">💕</div>
+          <div class="txt"><strong>Reasons I love you</strong><span>Tap for a new one, anytime</span></div>
+        </div>
+        <div class="ticket" onclick="showScreen('gamesMenu')">
+          <div class="icon">🎮</div>
+          <div class="txt"><strong>Play a little game</strong><span>Just for fun</span></div>
+        </div>
+        <div class="ticket" onclick="showScreen('timeline')">
+          <div class="icon">🕰️</div>
+          <div class="txt"><strong>Our memory timeline</strong><span>Every moment we've collected</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMORY TIMELINE -->
+    <div class="screen" id="timeline">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2>Our story so far</h2></div>
+      <p class="tl-intro">This is your timeline — empty until you fill it in. Add every moment worth keeping.</p>
+      <div class="tl-list" id="tlList"></div>
+      <p class="tl-empty" id="tlEmpty" style="display:none;">No memories yet. Tap below to add the first one 💫</p>
+      <button class="btn secondary tl-add-btn" id="tlAddToggleBtn" onclick="toggleTimelineForm()">+ Add a memory</button>
+      <div class="tl-form" id="tlForm">
+        <p class="tl-form-heading" id="tlFormHeading">New memory</p>
+        <div>
+          <label class="date-editor-label" for="tlDate">Date</label>
+          <input type="date" id="tlDate" class="date-input" style="margin-top:6px;">
+        </div>
+        <input type="text" id="tlTitle" placeholder="What happened? (e.g. Our first trip)" maxlength="60">
+        <textarea id="tlText" rows="3" placeholder="A line or two about it..." maxlength="240"></textarea>
+        <div>
+          <label class="date-editor-label">Icon</label>
+          <div class="tl-icon-picker" id="tlIconPicker"></div>
+        </div>
+        <div class="tl-form-row">
+          <button class="btn secondary" onclick="toggleTimelineForm(false)">Cancel</button>
+          <button class="btn" id="tlSaveBtn" onclick="saveMemoryForm()">Save memory</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNIVERSARY -->
+    <div class="screen" id="anniversary">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2>Our story</h2></div>
+
+      <div class="reminder-row">
+        <div class="reminder-text">
+          <strong>🔔 Anniversary reminders</strong>
+          <span>Get a nudge as the day gets close</span>
+        </div>
+        <button class="cute-switch" id="annivReminderSwitch" onclick="toggleReminder('anniv')" aria-pressed="false" aria-label="Toggle anniversary reminders">
+          <span class="cute-switch-thumb">💗</span>
+        </button>
+      </div>
+
+      <div class="anniv-since-row">
+        <span class="anniv-since" id="annivSince">together since —</span>
+        <button class="edit-date-btn" onclick="toggleDateEditor()" aria-label="Edit date">✏️</button>
+      </div>
+      <div class="date-editor" id="dateEditor">
+        <div class="date-editor-label">When did it start?</div>
+        <input type="date" id="dateInput" class="date-input">
+        <div class="date-editor-actions">
+          <button class="btn secondary" onclick="toggleDateEditor()">Cancel</button>
+          <button class="btn" onclick="saveAnniversaryDate()">Save</button>
+        </div>
+      </div>
+
+      <div class="anniv-hero">
+        <div class="anniv-days" id="annivBigDays">0</div>
+        <div class="anniv-days-label">days together</div>
+      </div>
+
+      <div class="anniv-live" id="annivLive">
+        <div class="anniv-unit"><b id="uYears">0</b><span>years</span></div>
+        <div class="anniv-unit"><b id="uMonths">0</b><span>months</span></div>
+        <div class="anniv-unit"><b id="uDays">0</b><span>days</span></div>
+        <div class="anniv-unit"><b id="uHours">0</b><span>hours</span></div>
+        <div class="anniv-unit"><b id="uMinutes">0</b><span>mins</span></div>
+        <div class="anniv-unit"><b id="uSeconds">0</b><span>secs</span></div>
+      </div>
+
+      <div class="anniv-ring-wrap">
+        <svg viewBox="0 0 120 120" class="anniv-ring">
+          <circle cx="60" cy="60" r="52" class="ring-track"></circle>
+          <circle cx="60" cy="60" r="52" class="ring-progress" id="ringProgress"></circle>
+        </svg>
+        <div class="anniv-ring-center">
+          <b id="ringPercent">0%</b>
+          <span>to next<br>anniversary</span>
+        </div>
+      </div>
+      <div class="anniv-next" id="annivNextText">next anniversary in — days</div>
+
+      <div class="milestones-label">Milestones</div>
+      <div class="milestones" id="milestoneList"></div>
+    </div>
+
+    <!-- BIRTHDAY -->
+    <div class="screen" id="birthday">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2 id="birthdayHeading">Her Birthday 🎂</h2></div>
+
+      <div class="screen-body">
+
+      <div class="reminder-row">
+        <div class="reminder-text">
+          <strong>🎉 Birthday reminders</strong>
+          <span>Get a nudge as the day gets close</span>
+        </div>
+        <button class="cute-switch" id="bdayReminderSwitch" onclick="toggleReminder('bday')" aria-pressed="false" aria-label="Toggle birthday reminders">
+          <span class="cute-switch-thumb">💗</span>
+        </button>
+      </div>
+      <div style="text-align:center; margin:-10px 0 16px;">
+        <button class="btn secondary" style="padding:8px 16px; font-size:12.5px;" onclick="testNativeNotification()">🔔 Test notification now</button>
+      </div>
+
+      <div class="anniv-since-row">
+        <span class="anniv-since" id="bdaySince">birthday: —</span>
+        <button class="edit-date-btn" onclick="toggleBdayEditor()" aria-label="Edit birthday">✏️</button>
+      </div>
+      <div class="date-editor" id="bdayEditor">
+        <div class="date-editor-label" id="bdayEditorLabel">When's her birthday?</div>
+        <input type="date" id="bdayInput" class="date-input">
+        <div class="date-editor-actions">
+          <button class="btn secondary" onclick="toggleBdayEditor()">Cancel</button>
+          <button class="btn" onclick="saveBirthdayDate()">Save</button>
+        </div>
+      </div>
+
+      <div class="anniv-hero">
+        <div class="anniv-days" id="bdayCountdown">0</div>
+        <div class="anniv-days-label" id="bdayCountdownLabel">days until her birthday</div>
+      </div>
+
+      <div class="anniv-ring-wrap">
+        <svg viewBox="0 0 120 120" class="anniv-ring">
+          <circle cx="60" cy="60" r="52" class="ring-track"></circle>
+          <circle cx="60" cy="60" r="52" class="ring-progress gold" id="bdayRing"></circle>
+        </svg>
+        <div class="anniv-ring-center">
+          <b id="bdayRingPercent">0%</b>
+          <span>through<br>the year</span>
+        </div>
+      </div>
+      <div class="anniv-next" id="bdayNextText">turning — on —</div>
+
+      </div>
+    </div>
+
+    <!-- LETTERS LIST -->
+    <div class="screen" id="lettersList">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2>Your letters</h2></div>
+      <p class="tl-intro">Ten little letters for ten different moments. Tap whichever fits right now.</p>
+      <div id="lettersListWrap"></div>
+    </div>
+
+    <!-- LETTER VIEW -->
+    <div class="screen" id="letterView">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('lettersList')">⬅️</div><h2 id="letterViewTitle">Your letter</h2></div>
+      <div class="envelope-wrap">
+        <div class="tap-hint" id="tapHint">tap the envelope</div>
+        <div class="envelope" id="envelope" onclick="openEnvelope()">
+          <div class="env-body"></div>
+          <div class="env-flap"></div>
+          <div class="env-seal">♥</div>
+        </div>
+        <div class="letter-paper-wrap">
+          <button class="icon-copy-btn" id="copyLetterBtn" onclick="copyLetter()" aria-label="Copy letter" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+          <div class="letter-paper" id="letterPaper"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REASONS -->
+    <div class="screen" id="reasons">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2>Reasons</h2></div>
+      <div class="reason-count" id="reasonCount">reason 1</div>
+      <div class="reason-card">
+        <button class="icon-copy-btn" onclick="copyReason()" aria-label="Copy this reason">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+        <p id="reasonText"></p>
+      </div>
+      <button class="btn" style="width:100%" onclick="nextReason()">Show me another</button>
+    </div>
+
+    <!-- GAMES MENU -->
+    <div class="screen" id="gamesMenu">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('home')">⬅️</div><h2>Games</h2></div>
+      <div class="screen-body">
+      <div class="game-tile" onclick="startPuzzle()">
+        <div class="icon">🧩</div>
+        <div><strong>Emoji Love Puzzle</strong><span>Guess the word from the emojis</span></div>
+      </div>
+      <div class="game-tile" onclick="showScreen('pickerGame')">
+        <div class="icon">🌙</div>
+        <div><strong>Date Night Picker</strong><span>Pick a mood, get tonight's plan</span></div>
+      </div>
+      <div class="game-tile" onclick="showScreen('slotGame')">
+        <div class="icon">🎰</div>
+        <div><strong>Compliment Machine</strong><span>Pull the lever, get a compliment</span></div>
+      </div>
+      </div>
+    </div>
+
+    <!-- EMOJI PUZZLE -->
+    <div class="screen" id="puzzleGame">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('gamesMenu')">⬅️</div><h2>Emoji Love Puzzle</h2></div>
+      <div id="puzzleArea">
+        <div class="puzzle-progress" id="puzzleProgress">1 / 5</div>
+        <div class="puzzle-card">
+          <div class="puzzle-emojis" id="puzzleEmojis"></div>
+        </div>
+        <input class="puzzle-input" id="puzzleInput" placeholder="Type your guess..." autocomplete="off">
+        <div class="puzzle-feedback" id="puzzleFeedback"></div>
+        <div class="puzzle-row">
+          <button class="btn secondary" onclick="revealPuzzle()">Reveal</button>
+          <button class="btn" onclick="checkPuzzle()">Guess</button>
+        </div>
+      </div>
+      <div id="resultOverlay">
+        <h3 id="resultTitle"></h3>
+        <p id="resultText" style="color:var(--ink-soft); margin:0;"></p>
+        <button class="btn" id="resultBtn">Play again</button>
+      </div>
+    </div>
+
+    <!-- DATE NIGHT PICKER -->
+    <div class="screen" id="pickerGame">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('gamesMenu')">⬅️</div><h2>Date Night Picker</h2></div>
+      <div id="pickerArea">
+        <p class="picker-instructions">Pick a mood, get tonight's plan — always the one it shows.</p>
+        <div class="picker-chips" id="pickerChips">
+          <button type="button" class="picker-chip" data-cat="cozy" onclick="selectPickerCategory('cozy')">🏠 Cozy at home</button>
+          <button type="button" class="picker-chip" data-cat="romantic" onclick="selectPickerCategory('romantic')">🌹 Romantic</button>
+          <button type="button" class="picker-chip" data-cat="adventurous" onclick="selectPickerCategory('adventurous')">🌄 Adventurous</button>
+          <button type="button" class="picker-chip" data-cat="budget" onclick="selectPickerCategory('budget')">💸 Budget-friendly</button>
+        </div>
+        <div class="picker-reveal">
+          <div class="picker-reveal-inner" id="pickerRevealInner">
+            <span class="picker-placeholder">Choose a mood above to get tonight's plan</span>
+          </div>
+        </div>
+        <div class="picker-actions" id="pickerActions" style="display:none;">
+          <button class="btn secondary" onclick="pickAgain()">Try another</button>
+          <button class="btn" onclick="copyPickerIdea()">Copy idea</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLIMENT MACHINE -->
+    <div class="screen" id="slotGame">
+      <div class="topbar"><div class="back-btn" onclick="showScreen('gamesMenu')">⬅️</div><h2>Compliment Machine</h2></div>
+      <div id="slotArea">
+        <div class="reels">
+          <div class="reel" id="reel1">💗</div>
+          <div class="reel" id="reel2">💗</div>
+          <div class="reel" id="reel3">💗</div>
+        </div>
+        <div class="compliment-box"><p id="complimentText"></p></div>
+        <button class="btn" id="slotBtn" onclick="pullLever()">Pull the lever</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   EDIT ME — this is the only section you need to touch to personalize.
+   ===================================================================== */
+const CONFIG = {
+  name: "My Dear Users💖",
+  yourName: "Yours, always",
+  anniversaryDate: "2023-06-15",
+  birthdayDate: "1999-04-22",
+  milestones: [
+    { label: "100 Days", days: 100 },
+    { label: "6 Months", days: 182 },
+    { label: "1 Year", days: 365 },
+    { label: "500 Days", days: 500 },
+    { label: "2 Years", days: 730 },
+    { label: "3 Years", days: 1095 },
+    { label: "1000 Days", days: 1000 },
+    { label: "5 Years", days: 1825 }
+  ],
+  letters: [
+    { id: "just-because", title: "Just because", tag: "💌", subtitle: "No occasion needed",
+      paragraphs: [
+        "No occasion, no reason, nothing to celebrate — I just wanted you to have this today.",
+        "I've been trying to figure out how to say this, and I don't think there's one perfect way, so I'll just say it plainly: you make my ordinary days feel like something worth paying attention to.",
+        "That's really it. That's the whole letter. I just wanted you to know that."
+      ] },
+    { id: "rough-day", title: "For a rough day", tag: "🤍", subtitle: "Read this when today feels like too much",
+      paragraphs: [
+        "If you're reading this, today's been hard. So first, breathe. You don't have to hold it together for anyone right now.",
+        "Whatever's weighing on you doesn't change how I see you. You're still the same person I fell for — steady, kind, and trying your best.",
+        "You don't have to fix everything today. Just get through it. I'm right here, and I'm not going anywhere."
+      ] },
+    { id: "missing-you", title: "When you're missing me", tag: "🥹", subtitle: "For the distance in between",
+      paragraphs: [
+        "I know the distance is hard some days. I feel it too, more than I probably say out loud.",
+        "But missing someone is just proof of how much they matter to you — so in a strange way, I'm almost glad you feel it, because I feel it right back.",
+        "This won't be forever. Until then, I'm still yours, from wherever I am."
+      ] },
+    { id: "good-morning", title: "Good morning", tag: "🌅", subtitle: "For the start of your day",
+      paragraphs: [
+        "However today goes, I hope it starts with knowing someone out there is already thinking about you.",
+        "Go easy on yourself, drink some water, and do one small thing today just because it makes you happy.",
+        "I hope your day is kind to you. And if it's not, come find me later — I'll be here."
+      ] },
+    { id: "good-night", title: "Good night", tag: "🌙", subtitle: "For winding down",
+      paragraphs: [
+        "Whatever today was, it's over now. Let it go for a little while.",
+        "Wherever you are, I hope you feel warm and unhurried tonight. You've earned some rest.",
+        "Sleep well. I'll still be thinking about you tomorrow, the same as I was today."
+      ] },
+    { id: "proud-of-you", title: "When I'm proud of you", tag: "🌟", subtitle: "For your wins, big or small",
+      paragraphs: [
+        "I need you to actually hear this, not just skim past it: I am so proud of you.",
+        "Not just for the big wins — for the quiet, unglamorous effort that nobody claps for. I see that part too.",
+        "You worked for this. Let yourself feel good about it. I'm already telling everyone."
+      ] },
+    { id: "after-we-argue", title: "After we argue", tag: "🫂", subtitle: "When we've had a hard moment",
+      paragraphs: [
+        "I hate when things feel tense between us. I never want silence to be the thing sitting in the room instead of us.",
+        "Disagreeing doesn't scare me. What matters is that we're still on the same team, even when we see things differently.",
+        "I love you on the easy days and on the hard ones. Let's talk it through, whenever you're ready."
+      ] },
+    { id: "when-you-doubt-yourself", title: "When you doubt yourself", tag: "💪", subtitle: "A little reminder of who you are",
+      paragraphs: [
+        "I know that voice in your head gets loud sometimes and tells you you're not enough. It's lying.",
+        "I've watched you handle things you didn't think you could. You're more capable than the doubt is giving you credit for.",
+        "You don't have to believe it on your own tonight — I'll believe it for both of us until you do."
+      ] },
+    { id: "no-reason-at-all", title: "For no reason at all", tag: "✨", subtitle: "Random, small, and true",
+      paragraphs: [
+        "A few completely unimportant things I love: the way you laugh at your own jokes before you finish telling them, how you say my name, the playlists you make that are basically letters in song form.",
+        "None of this is profound. It's just true, and I wanted to write it down somewhere.",
+        "You're my favorite person to do absolutely nothing with."
+      ] },
+    { id: "someday", title: "Someday, read this last", tag: "🔮", subtitle: "For further down the road",
+      paragraphs: [
+        "If you're reading this years from now, I hope we're still finding little reasons to write things like this to each other.",
+        "I hope the ordinary days turned into a whole life, and that it still feels like this — easy, safe, worth showing up for.",
+        "Thank you for choosing me, every day, even on the days it wasn't easy. I never took that for granted, then or now."
+      ] }
+  ],
+  timeline: [],
+  reasons: [
+    "The way you get excited about things you love, out loud, without holding back.",
+    "You remember the little things I mention once and bring them up weeks later.",
+    "Your laugh — the real one, not the polite one.",
+    "How safe I feel telling you the truth about anything.",
+    "The way you take care of the people around you without being asked.",
+    "You make plans exciting just by being part of them.",
+    "How you say 'we' about things before I even ask.",
+    "You're my favorite person to do absolutely nothing with.",
+    "The way you push me to be better, gently.",
+    "That look you give me when you think I'm not paying attention.",
+    "The way you say good morning like you mean it, even half asleep.",
+    "You make me want to be a better version of myself, not a different one.",
+    "How you always save me the last bite without me even asking.",
+    "The way your whole face changes when you talk about something you love.",
+    "You never make me feel silly for caring about small things.",
+    "How you hype me up before things I'm nervous about.",
+    "The way you hum without realizing it when you're happy.",
+    "You ask how my day actually was, and you wait for the real answer.",
+    "How you turn ordinary errands into something fun just by being there.",
+    "The way you hold my hand a little tighter in crowds.",
+    "You forgive quickly and never keep score.",
+    "How you notice when I'm quiet and gently ask what's wrong.",
+    "The playlists you make me that are basically just letters in song form.",
+    "You believe in my dumbest ideas just enough to make them happen.",
+    "The way you fall asleep mid-sentence and it's somehow adorable.",
+    "How you defend me even when I'm not in the room.",
+    "You make the most boring days feel like an inside joke.",
+    "The way you say my name when you're trying not to laugh.",
+    "How you remember exactly how I like my coffee.",
+    "You've never once made me feel like too much.",
+    "The way you dance in the kitchen when you think no one's watching.",
+    "How you check in on the people I love, just because you love me.",
+    "You make plans B, C, and D without complaining when plan A falls apart.",
+    "The way you say 'come here' when I've had a hard day.",
+    "How you still get a little shy when I compliment you.",
+    "You've turned into my favorite person to be bored with.",
+    "The way you root for me louder than I root for myself.",
+    "How your bad moods never turn into bad treatment of me.",
+    "You keep every little thing I've ever given you, even the silly ones.",
+    "The way you say 'we'll figure it out' and I actually believe it.",
+    "How you make me laugh so hard I forget what I was upset about.",
+    "You're endlessly patient with me on my slow, grumpy mornings.",
+    "The way you look for me first in every room you walk into.",
+    "How you make ordinary Tuesdays feel like they matter.",
+    "You never let me apologize for taking up space.",
+    "The way you say 'I'm proud of you' like it's the easiest thing in the world.",
+    "How being near you makes my shoulders drop an inch.",
+    "You choose me, over and over, in all the small unglamorous ways.",
+    "The way you remember my worries and quietly check back on them.",
+    "How you make me feel like the good parts of me are the real parts.",
+    "You are, simply, my favorite reason to come home."
+  ],
+  puzzles: [
+    { emojis: "🐻❤️", answer: "bear hug" },
+    { emojis: "🌙✨", answer: "moonlight" },
+    { emojis: "☕📖", answer: "lazy morning" },
+    { emojis: "💃🕺", answer: "date night" },
+    { emojis: "🔑❤️", answer: "key to my heart" }
+  ],
+  dateIdeas: {
+    cozy: [
+      "Cook dinner together from scratch",
+      "Movie marathon with all the blankets",
+      "Build a pillow fort and order dessert",
+      "Bake something messy and eat it warm",
+      "Lazy morning-in with pancakes and cartoons",
+      "Puzzle night with music playing low"
+    ],
+    romantic: [
+      "Go for a sunset walk, no phones",
+      "Candlelit dinner at home, dressed up for no reason",
+      "Slow dance in the kitchen to one song, then another",
+      "Write each other a short love letter and swap them",
+      "Stargazing with a shared blanket and hot drinks",
+      "Recreate your very first date"
+    ],
+    adventurous: [
+      "Surprise road trip, no destination decided yet",
+      "Try a new restaurant neither of you has been to",
+      "Take a spontaneous hike or bike ride",
+      "Sign up for a class together — cooking, dance, pottery",
+      "Explore a neighborhood you've never walked through",
+      "Chase a sunrise somewhere new"
+    ],
+    budget: [
+      "Picnic in the park with snacks from home",
+      "Game night with the games you already own",
+      "Free museum or gallery night, if your city has one",
+      "DIY spa night — face masks and bad music",
+      "Library date, then coffee and comparing what you picked",
+      "Sunset from the highest free spot nearby"
+    ]
+  },
+  compliments: [
+    "You are the best part of my day, every day.",
+    "Your smile is genuinely my favorite thing in this world.",
+    "I fall for you a little more every single day.",
+    "You make hard days feel a lot lighter.",
+    "I love how you see the world — it makes me see it better too.",
+    "You are so much more wonderful than you give yourself credit for.",
+    "Being around you feels like home.",
+    "You are, hands down, my favorite person."
+  ]
+};
+/* ===================================================================== */
+
+function saveDatesToStorage(){
+  try{
+    localStorage.setItem('loveAppDates', JSON.stringify({
+      anniversaryDate: CONFIG.anniversaryDate,
+      birthdayDate: CONFIG.birthdayDate
+    }));
+  }catch(e){}
+}
+(function loadDatesFromStorage(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('loveAppDates') || 'null');
+    if(saved && typeof saved === 'object'){
+      if(saved.anniversaryDate) CONFIG.anniversaryDate = saved.anniversaryDate;
+      if(saved.birthdayDate) CONFIG.birthdayDate = saved.birthdayDate;
+    }
+  }catch(e){}
+})();
+
+document.getElementById('nameHeading').textContent = CONFIG.name;
+
+let gateSelectedGender = null;
+let currentVisitor = null;
+
+const PARTNER_TEXT = {
+  girl: { poss: 'His', lower: 'his' },
+  boy:  { poss: 'Her', lower: 'her' }
+};
+
+function applyPartnerGender(gender){
+  const p = PARTNER_TEXT[gender] || PARTNER_TEXT.boy;
+  document.getElementById('birthdayTicketLabel').textContent = p.poss + ' birthday';
+  document.getElementById('birthdayHeading').textContent = p.poss + ' Birthday 🎂';
+  document.getElementById('bdayEditorLabel').textContent = "When's " + p.lower + " birthday?";
+  document.getElementById('bdayCountdownLabel').textContent = 'days until ' + p.lower + ' birthday';
+}
+
+function selectGender(g){
+  gateSelectedGender = g;
+  document.getElementById('pillGirl').classList.toggle('selected', g === 'girl');
+  document.getElementById('pillBoy').classList.toggle('selected', g === 'boy');
+  document.getElementById('gateError').textContent = '';
+}
+
+function setLoggedInUI(isLoggedIn){
+  document.getElementById('logoutBtn').style.display = isLoggedIn ? 'flex' : 'none';
+}
+
+function submitGate(){
+  const nameEl = document.getElementById('gateName');
+  const ageEl = document.getElementById('gateAge');
+  const errEl = document.getElementById('gateError');
+
+  const name = nameEl.value.trim();
+  const ageRaw = ageEl.value.trim();
+  const age = Number(ageRaw);
+
+  if(!name){ errEl.textContent = "I'd love to know your name first."; nameEl.focus(); return; }
+  if(!gateSelectedGender){ errEl.textContent = 'Please pick one so I can say hi properly.'; return; }
+  if(!ageRaw || !Number.isFinite(age) || age <= 0 || age > 120){ errEl.textContent = 'That age doesn\'t look right — mind checking it?'; ageEl.focus(); return; }
+
+  errEl.textContent = '';
+  const visitor = { name: name, gender: gateSelectedGender, age: age };
+  try{ localStorage.setItem('loveAppVisitor', JSON.stringify(visitor)); }catch(e){}
+
+  currentVisitor = visitor;
+  applyPartnerGender(visitor.gender);
+  showWelcome(visitor, false);
+}
+
+function showWelcome(visitor, isReturning){
+  document.getElementById('gate').classList.remove('active');
+  setLoggedInUI(true);
+
+  const overlay = document.getElementById('welcome-overlay');
+  const icon = document.getElementById('welcomeIcon');
+  const msg = document.getElementById('welcomeMsg');
+  const sub = document.getElementById('welcomeSub');
+
+  icon.textContent = visitor.gender === 'girl' ? '👸' : '🤴';
+  msg.textContent = (isReturning ? 'Welcome back, ' : 'Welcome, ') + visitor.name;
+  sub.textContent = isReturning ? 'good to see you again' : "so glad you're here";
+
+  [icon, msg, sub].forEach(el=>{ el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+
+  overlay.classList.add('show');
+
+  setTimeout(()=>{
+    overlay.classList.remove('show');
+    setTimeout(()=>{ showScreen('home'); }, 500);
+  }, 3000);
+}
+
+function logoutUser(){
+  try{ localStorage.removeItem('loveAppVisitor'); }catch(e){}
+  currentVisitor = null;
+  gateSelectedGender = null;
+
+  document.getElementById('gateName').value = '';
+  document.getElementById('gateAge').value = '';
+  document.getElementById('pillGirl').classList.remove('selected');
+  document.getElementById('pillBoy').classList.remove('selected');
+  document.getElementById('gateError').textContent = '';
+
+  setLoggedInUI(false);
+  showScreen('gate');
+}
+
+(function autoLogin(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('loveAppVisitor') || 'null');
+    if(saved && saved.name && saved.gender){
+      currentVisitor = saved;
+      applyPartnerGender(saved.gender);
+      showWelcome(saved, true);
+      return;
+    }
+  }catch(e){}
+})();
+
+let annivInterval = null;
+let bdayInterval = null;
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  if(id === 'anniversary'){
+    milestonesRendered = false;
+    updateAnniversary();
+    if(annivInterval) clearInterval(annivInterval);
+    annivInterval = setInterval(updateAnniversary, 1000);
+  } else if(annivInterval){
+    clearInterval(annivInterval);
+    annivInterval = null;
+  }
+
+  if(id === 'birthday'){
+    updateBirthday();
+    if(bdayInterval) clearInterval(bdayInterval);
+    bdayInterval = setInterval(updateBirthday, 30000);
+  } else if(bdayInterval){
+    clearInterval(bdayInterval);
+    bdayInterval = null;
+  }
+}
+
+(function(){
+  const wrap = document.getElementById('floatHearts');
+  const syms = ['💋','💖','❤️','🫶'];
+  for(let i=0;i<8;i++){
+    const s = document.createElement('span');
+    s.textContent = syms[i % syms.length];
+    s.style.left = (Math.random()*90)+'%';
+    s.style.animationDelay = (Math.random()*14)+'s';
+    s.style.animationDuration = (10+Math.random()*8)+'s';
+    s.style.fontSize = (14+Math.random()*14)+'px';
+    wrap.appendChild(s);
+  }
+})();
+
+(function(){
+  const targetScreens = ['lettersList','letterView','anniversary','reasons','gamesMenu','puzzleGame','pickerGame','slotGame','timeline'];
+  const syms = ['💋','💖','❤️','🫶'];
+  targetScreens.forEach(id=>{
+    const screen = document.getElementById(id);
+    if(!screen) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'float-hearts-mini';
+    for(let i=0;i<6;i++){
+      const s = document.createElement('span');
+      s.textContent = syms[i % syms.length];
+      s.style.left = (Math.random()*90)+'%';
+      s.style.animationDelay = (Math.random()*13)+'s';
+      s.style.animationDuration = (9+Math.random()*7)+'s';
+      s.style.fontSize = (11+Math.random()*8)+'px';
+      wrap.appendChild(s);
+    }
+    screen.insertBefore(wrap, screen.firstChild);
+  });
+})();
+
+(function(){
+  const screen = document.getElementById('birthday');
+  if(!screen) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'float-bday-mini';
+  const syms = ['🎂','🎈','🎉','🍰','✨'];
+  for(let i=0;i<7;i++){
+    const s = document.createElement('span');
+    s.textContent = syms[i % syms.length];
+    s.style.left = (Math.random()*88)+'%';
+    s.style.animationDelay = (Math.random()*12)+'s';
+    s.style.animationDuration = (8+Math.random()*7)+'s';
+    s.style.fontSize = (14+Math.random()*10)+'px';
+    wrap.appendChild(s);
+  }
+  screen.insertBefore(wrap, screen.firstChild);
+})();
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('copyToast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 1700);
+}
+function fallbackCopy(text, onDone){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    onDone();
+  }catch(e){ showToast("Couldn't copy — try pressing and holding the text"); }
+}
+function copyText(text, successMsg){
+  const onDone = ()=> showToast(successMsg || 'Copied ❤');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(onDone).catch(()=> fallbackCopy(text, onDone));
+  } else {
+    fallbackCopy(text, onDone);
+  }
+}
+
+const LETTERS_READ_KEY = 'loveAppLettersRead';
+function loadReadLetters(){
+  try{ return JSON.parse(localStorage.getItem(LETTERS_READ_KEY) || '[]'); }catch(e){ return []; }
+}
+let readLetters = loadReadLetters();
+function markLetterRead(id){
+  if(readLetters.includes(id)) return;
+  readLetters.push(id);
+  try{ localStorage.setItem(LETTERS_READ_KEY, JSON.stringify(readLetters)); }catch(e){}
+}
+
+function renderLettersList(){
+  const wrap = document.getElementById('lettersListWrap');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  CONFIG.letters.forEach(letter=>{
+    const tile = document.createElement('div');
+    tile.className = 'letter-tile' + (readLetters.includes(letter.id) ? ' read' : '');
+    tile.onclick = ()=> openLetter(letter.id);
+    tile.innerHTML = `
+      <div class="icon">${letter.tag}</div>
+      <div class="txt"><strong>${letter.title}</strong><span>${letter.subtitle}</span></div>
+      <span class="read-badge" title="Read"></span>`;
+    wrap.appendChild(tile);
+  });
+}
+
+let currentLetterId = null;
+let envelopeOpened = false;
+function openLetter(id){
+  currentLetterId = id;
+  const letter = CONFIG.letters.find(l=> l.id === id);
+  if(!letter) return;
+
+  document.getElementById('letterViewTitle').textContent = letter.title;
+  envelopeOpened = false;
+  document.getElementById('envelope').classList.remove('open');
+  document.getElementById('tapHint').style.opacity = '1';
+  document.getElementById('letterPaper').classList.remove('show');
+  document.getElementById('letterPaper').innerHTML = '';
+  document.getElementById('copyLetterBtn').style.display = 'none';
+
+  showScreen('letterView');
+}
+function openEnvelope(){
+  if(envelopeOpened || !currentLetterId) return;
+  envelopeOpened = true;
+  const letter = CONFIG.letters.find(l=> l.id === currentLetterId);
+  if(!letter) return;
+
+  document.getElementById('envelope').classList.add('open');
+  document.getElementById('tapHint').style.opacity = '0';
+  const paper = document.getElementById('letterPaper');
+  paper.innerHTML = letter.paragraphs.map((p,i)=>`<p style="animation-delay:${0.3+i*0.35}s">${p}</p>`).join('')
+    + `<p class="sig" style="animation-delay:${0.3+letter.paragraphs.length*0.35}s">— ${CONFIG.yourName}</p>`;
+  setTimeout(()=> paper.classList.add('show'), 550);
+  document.getElementById('copyLetterBtn').style.display = 'flex';
+
+  markLetterRead(currentLetterId);
+  renderLettersList();
+}
+function copyLetter(){
+  const letter = CONFIG.letters.find(l=> l.id === currentLetterId);
+  if(!letter) return;
+  const text = letter.paragraphs.join('\n\n') + '\n\n— ' + CONFIG.yourName;
+  copyText(text, 'Letter copied 💌');
+}
+renderLettersList();
+
+let reasonOrder = [];
+let reasonIdx = 0;
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function nextReason(){
+  if(reasonIdx >= reasonOrder.length){ reasonOrder = shuffle(CONFIG.reasons); reasonIdx = 0; }
+  document.getElementById('reasonText').textContent = reasonOrder[reasonIdx];
+  reasonIdx++;
+  document.getElementById('reasonCount').textContent = 'reason ' + (CONFIG.reasons.length - (reasonOrder.length - reasonIdx));
+}
+function copyReason(){
+  const text = document.getElementById('reasonText').textContent;
+  if(!text) return;
+  copyText(text, 'Copied 💕');
+}
+nextReason();
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+let milestonesRendered = false;
+
+function getElapsed(start, now){
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  let days = now.getDate() - start.getDate();
+  let hours = now.getHours() - start.getHours();
+  let minutes = now.getMinutes() - start.getMinutes();
+  let seconds = now.getSeconds() - start.getSeconds();
+
+  if(seconds < 0){ seconds += 60; minutes--; }
+  if(minutes < 0){ minutes += 60; hours--; }
+  if(hours < 0){ hours += 24; days--; }
+  if(days < 0){
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    days += prevMonth.getDate();
+    months--;
+  }
+  if(months < 0){ months += 12; years--; }
+
+  const totalDays = Math.floor((now - start) / 86400000);
+  return { years, months, days, hours, minutes, seconds, totalDays };
+}
+
+function renderMilestones(totalDays, start){
+  const list = document.getElementById('milestoneList');
+  list.innerHTML = '';
+  const sorted = [...CONFIG.milestones].sort((a,b)=> a.days - b.days);
+  sorted.forEach(m=>{
+    const reached = totalDays >= m.days;
+    const targetDate = new Date(start.getTime() + m.days*86400000);
+    const dateStr = targetDate.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+    const row = document.createElement('div');
+    row.className = 'milestone' + (reached ? ' reached' : '');
+    const sub = reached
+      ? 'reached on ' + dateStr
+      : 'in ' + (m.days - totalDays) + ' day' + ((m.days - totalDays) === 1 ? '' : 's') + ' · ' + dateStr;
+    row.innerHTML = '<div class="m-icon">' + (reached ? '✓' : '⏳') + '</div>'
+      + '<div class="m-txt"><strong>' + m.label + '</strong><span>' + sub + '</span></div>';
+    list.appendChild(row);
+  });
+}
+
+function toggleDateEditor(){
+  const editor = document.getElementById('dateEditor');
+  const showing = editor.classList.toggle('show');
+  if(showing){
+    document.getElementById('dateInput').value = CONFIG.anniversaryDate;
+  }
+}
+function saveAnniversaryDate(){
+  const val = document.getElementById('dateInput').value;
+  if(!val) return;
+  CONFIG.anniversaryDate = val;
+  saveDatesToStorage();
+  milestonesRendered = false;
+  updateAnniversary();
+  rescheduleReminderIfOn('anniv');
+  document.getElementById('dateEditor').classList.remove('show');
+}
+
+function updateAnniversary(){
+  const start = new Date(CONFIG.anniversaryDate + 'T00:00:00');
+  const now = new Date();
+
+  document.getElementById('annivSince').textContent =
+    'together since ' + start.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+
+  const el = getElapsed(start, now);
+  document.getElementById('annivBigDays').textContent = el.totalDays;
+  document.getElementById('uYears').textContent = el.years;
+  document.getElementById('uMonths').textContent = el.months;
+  document.getElementById('uDays').textContent = el.days;
+  document.getElementById('uHours').textContent = String(el.hours).padStart(2,'0');
+  document.getElementById('uMinutes').textContent = String(el.minutes).padStart(2,'0');
+  document.getElementById('uSeconds').textContent = String(el.seconds).padStart(2,'0');
+
+  let nextAnniv = new Date(now.getFullYear(), start.getMonth(), start.getDate());
+  if(nextAnniv <= now) nextAnniv = new Date(now.getFullYear()+1, start.getMonth(), start.getDate());
+  const prevAnniv = new Date(nextAnniv.getFullYear()-1, start.getMonth(), start.getDate());
+
+  const cycleLength = nextAnniv - prevAnniv;
+  const elapsedInCycle = now - prevAnniv;
+  const percent = Math.max(0, Math.min(1, elapsedInCycle / cycleLength));
+
+  const ring = document.getElementById('ringProgress');
+  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - percent);
+  document.getElementById('ringPercent').textContent = Math.round(percent*100) + '%';
+
+  const daysToNext = Math.ceil((nextAnniv - now) / 86400000);
+  document.getElementById('annivNextText').textContent =
+    'next anniversary in ' + daysToNext + ' day' + (daysToNext === 1 ? '' : 's') +
+    ' · ' + nextAnniv.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+
+  if(!milestonesRendered){
+    renderMilestones(el.totalDays, start);
+    milestonesRendered = true;
+  }
+}
+
+function toggleBdayEditor(){
+  const editor = document.getElementById('bdayEditor');
+  const showing = editor.classList.toggle('show');
+  if(showing){
+    document.getElementById('bdayInput').value = CONFIG.birthdayDate;
+  }
+}
+function saveBirthdayDate(){
+  const val = document.getElementById('bdayInput').value;
+  if(!val) return;
+  CONFIG.birthdayDate = val;
+  saveDatesToStorage();
+  updateBirthday();
+  rescheduleReminderIfOn('bday');
+  document.getElementById('bdayEditor').classList.remove('show');
+}
+
+function updateBirthday(){
+  const birth = new Date(CONFIG.birthdayDate + 'T00:00:00');
+  const now = new Date();
+
+  document.getElementById('bdaySince').textContent =
+    'birthday: ' + birth.toLocaleDateString(undefined, { month:'long', day:'numeric' });
+
+  let nextBday = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+  if(nextBday <= now) nextBday = new Date(now.getFullYear()+1, birth.getMonth(), birth.getDate());
+  const prevBday = new Date(nextBday.getFullYear()-1, birth.getMonth(), birth.getDate());
+
+  const daysToNext = Math.ceil((nextBday - now) / 86400000);
+  document.getElementById('bdayCountdown').textContent = daysToNext;
+
+  const cycleLength = nextBday - prevBday;
+  const elapsedInCycle = now - prevBday;
+  const percent = Math.max(0, Math.min(1, elapsedInCycle / cycleLength));
+
+  const ring = document.getElementById('bdayRing');
+  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - percent);
+  document.getElementById('bdayRingPercent').textContent = Math.round(percent*100) + '%';
+
+  const turningAge = nextBday.getFullYear() - birth.getFullYear();
+  document.getElementById('bdayNextText').textContent =
+    'turning ' + turningAge + ' on ' + nextBday.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+}
+
+const TIMELINE_KEY = 'loveAppTimeline';
+function loadTimelineEntries(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(TIMELINE_KEY) || 'null');
+    if(Array.isArray(saved)) return saved;
+  }catch(e){}
+  return (CONFIG.timeline || []).map((t,i)=> Object.assign({ id: 'mem-seed-' + i }, t));
+}
+function saveTimelineEntries(){
+  try{ localStorage.setItem(TIMELINE_KEY, JSON.stringify(timelineEntries)); }catch(e){}
+}
+let timelineEntries = loadTimelineEntries();
+let editingMemoryId = null;
+
+const TL_ICONS = ['💗','💫','✈️','🎉','🎂','🥂','🏡','🎄','💍','🌙','✨','📍'];
+
+function formatTlDate(dateStr){
+  try{
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  }catch(e){ return dateStr; }
+}
+
+function renderTimeline(){
+  const list = document.getElementById('tlList');
+  const empty = document.getElementById('tlEmpty');
+  if(!list) return;
+  list.innerHTML = '';
+
+  if(!timelineEntries.length){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const sorted = [...timelineEntries].sort((a,b)=> a.date.localeCompare(b.date));
+  sorted.forEach(entry=>{
+    const item = document.createElement('div');
+    item.className = 'tl-item' + (entry.id === editingMemoryId ? ' editing' : '');
+    item.innerHTML = `
+      <div class="tl-actions">
+        <button class="tl-edit" onclick="editMemory('${entry.id}')" aria-label="Edit memory">✎</button>
+        <button class="tl-del" onclick="deleteMemory('${entry.id}')" aria-label="Delete memory">✕</button>
+      </div>
+      <div class="tl-date">${formatTlDate(entry.date)}</div>
+      <div class="tl-title"><span>${entry.icon || '💗'}</span><span>${entry.title}</span></div>
+      <p class="tl-text">${entry.text || ''}</p>`;
+    list.appendChild(item);
+  });
+}
+
+function renderIconPicker(selected){
+  const wrap = document.getElementById('tlIconPicker');
+  wrap.innerHTML = '';
+  TL_ICONS.forEach(icon=>{
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'tl-icon-chip' + (icon === selected ? ' selected' : '');
+    chip.textContent = icon;
+    chip.onclick = ()=>{
+      wrap.querySelectorAll('.tl-icon-chip').forEach(c=> c.classList.remove('selected'));
+      chip.classList.add('selected');
+    };
+    wrap.appendChild(chip);
+  });
+}
+function getSelectedIcon(){
+  const sel = document.querySelector('#tlIconPicker .tl-icon-chip.selected');
+  return sel ? sel.textContent : TL_ICONS[0];
+}
+
+function toggleTimelineForm(show){
+  const form = document.getElementById('tlForm');
+  const shouldShow = typeof show === 'boolean' ? show : !form.classList.contains('show');
+  form.classList.toggle('show', shouldShow);
+
+  if(shouldShow){
+    if(!editingMemoryId){
+      document.getElementById('tlFormHeading').textContent = 'New memory';
+      document.getElementById('tlSaveBtn').textContent = 'Save memory';
+      document.getElementById('tlDate').value = '';
+      document.getElementById('tlTitle').value = '';
+      document.getElementById('tlText').value = '';
+      renderIconPicker(TL_ICONS[0]);
+    }
+  } else {
+    editingMemoryId = null;
+    renderTimeline();
+  }
+}
+
+function editMemory(id){
+  const entry = timelineEntries.find(t=> t.id === id);
+  if(!entry) return;
+  editingMemoryId = id;
+
+  document.getElementById('tlFormHeading').textContent = 'Edit memory';
+  document.getElementById('tlSaveBtn').textContent = 'Save changes';
+  document.getElementById('tlDate').value = entry.date || '';
+  document.getElementById('tlTitle').value = entry.title || '';
+  document.getElementById('tlText').value = entry.text || '';
+  renderIconPicker(entry.icon || TL_ICONS[0]);
+
+  renderTimeline();
+  toggleTimelineForm(true);
+  document.getElementById('tlForm').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function saveMemoryForm(){
+  const dateEl = document.getElementById('tlDate');
+  const titleEl = document.getElementById('tlTitle');
+  const textEl = document.getElementById('tlText');
+
+  const date = dateEl.value;
+  const title = titleEl.value.trim();
+  const text = textEl.value.trim();
+  const icon = getSelectedIcon();
+
+  if(!date || !title){
+    showToast('Add a date and a title first 🤍');
+    return;
+  }
+
+  if(editingMemoryId){
+    const entry = timelineEntries.find(t=> t.id === editingMemoryId);
+    if(entry){
+      entry.date = date; entry.title = title; entry.text = text; entry.icon = icon;
+    }
+    showToast('Memory updated 💗');
+  } else {
+    timelineEntries.push({ id: 'mem-' + Date.now(), date, title, text, icon });
+    showToast('Memory added 💫');
+  }
+
+  saveTimelineEntries();
+  editingMemoryId = null;
+  toggleTimelineForm(false);
+}
+
+function deleteMemory(id){
+  timelineEntries = timelineEntries.filter(t=> t.id !== id);
+  saveTimelineEntries();
+  if(editingMemoryId === id){
+    editingMemoryId = null;
+    document.getElementById('tlForm').classList.remove('show');
+  }
+  renderTimeline();
+}
+
+renderTimeline();
+
+let puzzleOrder = [], puzzleIdx = 0, puzzleScore = 0;
+function startPuzzle(){
+  showScreen('puzzleGame');
+  document.getElementById('resultOverlay').classList.remove('show');
+  puzzleOrder = shuffle(CONFIG.puzzles);
+  puzzleIdx = 0; puzzleScore = 0;
+  loadPuzzle();
+}
+function loadPuzzle(){
+  const p = puzzleOrder[puzzleIdx];
+  document.getElementById('puzzleEmojis').textContent = p.emojis;
+  document.getElementById('puzzleProgress').textContent = (puzzleIdx+1)+' / '+puzzleOrder.length;
+  document.getElementById('puzzleInput').value = '';
+  document.getElementById('puzzleFeedback').textContent = '';
+  document.getElementById('puzzleFeedback').className = 'puzzle-feedback';
+  document.getElementById('puzzleInput').focus();
+}
+function normalize(s){ return s.trim().toLowerCase().replace(/[^a-z0-9 ]/g,''); }
+function checkPuzzle(){
+  const guess = normalize(document.getElementById('puzzleInput').value);
+  const answer = normalize(puzzleOrder[puzzleIdx].answer);
+  const fb = document.getElementById('puzzleFeedback');
+  if(!guess) return;
+  if(guess === answer){
+    fb.textContent = "That's it! 🎉"; fb.className = 'puzzle-feedback correct';
+    puzzleScore++;
+    setTimeout(advancePuzzle, 700);
+  } else {
+    fb.textContent = 'Not quite — try again'; fb.className = 'puzzle-feedback wrong';
+  }
+}
+function revealPuzzle(){
+  const fb = document.getElementById('puzzleFeedback');
+  fb.textContent = 'It was: ' + puzzleOrder[puzzleIdx].answer;
+  fb.className = 'puzzle-feedback wrong';
+  setTimeout(advancePuzzle, 900);
+}
+function advancePuzzle(){
+  puzzleIdx++;
+  if(puzzleIdx >= puzzleOrder.length){
+    document.getElementById('resultTitle').textContent = 'All done!';
+    document.getElementById('resultText').innerHTML = 'You got <b>'+puzzleScore+'</b> / '+puzzleOrder.length+' right.';
+    document.getElementById('resultBtn').onclick = startPuzzle;
+    document.getElementById('resultOverlay').classList.add('show');
+  } else {
+    loadPuzzle();
+  }
+}
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && document.getElementById('puzzleGame').classList.contains('active')) checkPuzzle();
+});
+
+let pickerCategory = null;
+let pickerHistory = [];
+let pickerCurrentIdea = '';
+const pickerCatLabels = { cozy:'Cozy at home', romantic:'Romantic', adventurous:'Adventurous', budget:'Budget-friendly' };
+
+function selectPickerCategory(cat){
+  pickerCategory = cat;
+  pickerHistory = [];
+  document.querySelectorAll('.picker-chip').forEach(c=> c.classList.toggle('selected', c.dataset.cat === cat));
+  document.getElementById('pickerActions').style.display = 'flex';
+  revealPickerIdea();
+}
+function revealPickerIdea(){
+  const ideas = (CONFIG.dateIdeas && CONFIG.dateIdeas[pickerCategory]) || [];
+  if(!ideas.length) return;
+  let pool = ideas.filter(i => !pickerHistory.includes(i));
+  if(!pool.length){ pickerHistory = []; pool = ideas; }
+  const idea = pool[Math.floor(Math.random()*pool.length)];
+  pickerHistory.push(idea);
+  pickerCurrentIdea = idea;
+
+  const inner = document.getElementById('pickerRevealInner');
+  inner.innerHTML = '';
+  const p = document.createElement('p');
+  p.className = 'picker-idea';
+  const catSpan = document.createElement('span');
+  catSpan.className = 'picker-idea-cat';
+  catSpan.textContent = pickerCatLabels[pickerCategory] || '';
+  p.appendChild(catSpan);
+  p.appendChild(document.createTextNode(idea));
+  inner.appendChild(p);
+}
+function pickAgain(){
+  if(!pickerCategory) return;
+  revealPickerIdea();
+}
+function copyPickerIdea(){
+  if(!pickerCurrentIdea) return;
+  copyText(pickerCurrentIdea, 'Idea copied 💌');
+}
+
+const reelIcons = ['💗','💕','💖','❤️','✨','🌹'];
+function pullLever(){
+  const btn = document.getElementById('slotBtn');
+  btn.disabled = true;
+  document.getElementById('complimentText').classList.remove('show');
+  const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+  const spins = [14, 18, 22];
+  reels.forEach((reel, idx)=>{
+    let count = 0;
+    const iv = setInterval(()=>{
+      reel.textContent = reelIcons[Math.floor(Math.random()*reelIcons.length)];
+      count++;
+      if(count >= spins[idx]){
+        clearInterval(iv);
+        reel.textContent = '💗';
+        if(idx === reels.length-1){
+          const c = CONFIG.compliments[Math.floor(Math.random()*CONFIG.compliments.length)];
+          const p = document.getElementById('complimentText');
+          p.textContent = c;
+          setTimeout(()=> p.classList.add('show'), 100);
+          btn.disabled = false;
+        }
+      }
+    }, 80);
+  });
+}
+
+const REMINDER_SETTINGS_KEY = 'loveAppReminderSettings';
+const REMINDER_MILESTONES = [7, 3, 1, 0];
+const REMINDER_HOUR = 0;
+
+function loadReminderSettings(){
+  try{ return JSON.parse(localStorage.getItem(REMINDER_SETTINGS_KEY) || '{}'); }catch(e){ return {}; }
+}
+function saveReminderSettings(){
+  try{ localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(reminderSettings)); }catch(e){}
+}
+let reminderSettings = loadReminderSettings();
+
+function updateReminderUI(){
+  const a = document.getElementById('annivReminderSwitch');
+  const b = document.getElementById('bdayReminderSwitch');
+  if(a){ a.classList.toggle('on', !!reminderSettings.anniv); a.setAttribute('aria-pressed', !!reminderSettings.anniv); }
+  if(b){ b.classList.toggle('on', !!reminderSettings.bday); b.setAttribute('aria-pressed', !!reminderSettings.bday); }
+}
+
+function hasNativeReminders(){
+  return !!window.AndroidNotifications;
+}
+function nativeEnable(){
+  if(hasNativeReminders() && window.AndroidNotifications.enableNotifications) window.AndroidNotifications.enableNotifications();
+}
+function nativeSchedule(tag, triggerAtMillis, title, message){
+  if(hasNativeReminders() && window.AndroidNotifications.scheduleNotification){
+    window.AndroidNotifications.scheduleNotification(title, message, tag, triggerAtMillis);
+  }
+}
+function nativeCancel(tag){
+  if(hasNativeReminders() && window.AndroidNotifications.cancelNotification) window.AndroidNotifications.cancelNotification(tag);
+}
+function testNativeNotification(){
+  if(hasNativeReminders() && window.AndroidNotifications.showNotification){
+    window.AndroidNotifications.showNotification('Test 💌', 'If you see this, notifications are working!', 'test-' + Date.now());
+    showToast('Test notification sent — check your notification shade 🔔');
+  } else {
+    showToast("Native notifications aren't available here (open the installed app, not a browser)");
+  }
+}
+
+function triggerTimeFor(month, day, daysBefore){
+  const now = new Date();
+  let target = new Date(now.getFullYear(), month, day, REMINDER_HOUR, 0, 0, 0);
+  if(target < now) target = new Date(now.getFullYear()+1, month, day, REMINDER_HOUR, 0, 0, 0);
+  target.setDate(target.getDate() - daysBefore);
+  if(target < now) target.setFullYear(target.getFullYear() + 1);
+  return target.getTime();
+}
+
+function scheduleNativeReminders(kind){
+  if(!hasNativeReminders()) return;
+  const isAnniv = kind === 'anniv';
+  const dateStr = isAnniv ? CONFIG.anniversaryDate : CONFIG.birthdayDate;
+  const date = new Date(dateStr + 'T00:00:00');
+  REMINDER_MILESTONES.forEach((d)=>{
+    const tag = (isAnniv ? 'anniv-' : 'bday-') + d;
+    const triggerAt = triggerTimeFor(date.getMonth(), date.getDate(), d);
+    const title = isAnniv ? 'Our story' : 'Birthday countdown';
+    const msg = isAnniv
+      ? (d === 0 ? "Today's your anniversary! 💍" : ('Your anniversary is in ' + d + ' day' + (d===1?'':'s') + ' 💕'))
+      : (d === 0 ? "It's the big day — happy birthday! 🎂" : ('Birthday coming up in ' + d + ' day' + (d===1?'':'s') + ' 🎈'));
+    nativeSchedule(tag, triggerAt, title, msg);
+  });
+}
+function cancelNativeReminders(kind){
+  const isAnniv = kind === 'anniv';
+  REMINDER_MILESTONES.forEach((d)=> nativeCancel((isAnniv ? 'anniv-' : 'bday-') + d));
+}
+
+async function toggleReminder(kind){
+  const turningOn = !reminderSettings[kind];
+
+  if(turningOn){
+    if(hasNativeReminders()){
+      nativeEnable();
+    } else if('Notification' in window){
+      let perm = Notification.permission;
+      if(perm === 'default'){
+        try{ perm = await Notification.requestPermission(); }catch(e){ perm = 'denied'; }
+      }
+      if(perm !== 'granted'){
+        showToast('Please allow notifications for this app to get reminders 🔔');
+        return;
+      }
+    } else {
+      showToast("This device can't show notifications 😕");
+      return;
+    }
+  }
+
+  reminderSettings[kind] = turningOn;
+  saveReminderSettings();
+  updateReminderUI();
+  showToast(turningOn
+    ? (kind === 'anniv' ? 'Anniversary reminders on 💗' : 'Birthday reminders on 🎉')
+    : 'Reminders turned off');
+
+  if(turningOn){
+    scheduleNativeReminders(kind);
+    checkReminders();
+  } else {
+    cancelNativeReminders(kind);
+  }
+}
+
+function rescheduleReminderIfOn(kind){
+  if(reminderSettings[kind]) scheduleNativeReminders(kind);
+}
+
+function daysUntilAnnualDate(month, day){
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let target = new Date(now.getFullYear(), month, day);
+  if(target < today) target = new Date(now.getFullYear()+1, month, day);
+  return Math.round((target - today) / 86400000);
+}
+
+async function fireReminderNotification(title, body, tag){
+  try{
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg && reg.showNotification){
+        await reg.showNotification(title, { body: body, tag: tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
+        return;
+      }
+    }
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification(title, { body: body, tag: tag, icon: 'icons/icon-192.png' });
+    }
+  }catch(e){}
+}
+
+function checkReminders(){
+  if(hasNativeReminders()) return;
+  if(!reminderSettings.anniv && !reminderSettings.bday) return;
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const REMINDER_FIRED_KEY = 'loveAppRemindersFired';
+  const todayKey = new Date().toDateString();
+  let fired = {};
+  try{ fired = JSON.parse(localStorage.getItem(REMINDER_FIRED_KEY) || '{}'); }catch(e){}
+  if(fired.date !== todayKey){ fired = { date: todayKey, tags: [] }; }
+
+  if(reminderSettings.anniv){
+    const start = new Date(CONFIG.anniversaryDate + 'T00:00:00');
+    const d = daysUntilAnnualDate(start.getMonth(), start.getDate());
+    if(REMINDER_MILESTONES.includes(d)){
+      const tag = 'anniv-' + d;
+      if(!fired.tags.includes(tag)){
+        const msg = d === 0 ? "Today's your anniversary! 💍" : ('Your anniversary is in ' + d + ' day' + (d===1?'':'s') + ' 💕');
+        fireReminderNotification('Our story', msg, tag);
+        fired.tags.push(tag);
+      }
+    }
+  }
+  if(reminderSettings.bday){
+    const birth = new Date(CONFIG.birthdayDate + 'T00:00:00');
+    const d = daysUntilAnnualDate(birth.getMonth(), birth.getDate());
+    if(REMINDER_MILESTONES.includes(d)){
+      const tag = 'bday-' + d;
+      if(!fired.tags.includes(tag)){
+        const msg = d === 0 ? "It's the big day — happy birthday! 🎂" : ('Birthday coming up in ' + d + ' day' + (d===1?'':'s') + ' 🎈');
+        fireReminderNotification('Birthday countdown', msg, tag);
+        fired.tags.push(tag);
+      }
+    }
+  }
+  try{ localStorage.setItem(REMINDER_FIRED_KEY, JSON.stringify(fired)); }catch(e){}
+}
+
+updateReminderUI();
+checkReminders();
+setInterval(checkReminders, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkReminders(); });
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
