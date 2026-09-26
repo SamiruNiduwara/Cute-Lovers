@@ -106,6 +106,7 @@ Allow Gradle to synchronize, connect an Android device or start an emulator, and
 
 **Samiru Ninduwara**
 
+
 ## 🎓 What I Learned
 
 Building Cute Lovers as my first Android application helped me gain practical experience with:
