@@ -58,15 +58,19 @@ The project focuses on creating a fun user experience rather than being a large-
   <img src="screenshots/login-screen.jpeg" width="220">
   <img src="screenshots/home-screen.jpeg" width="220">
   <img src="screenshots/love-letters.jpeg" width="220">
-  <img src="screenshots/anniversary.jpeg" width="220">
 </p>
 
 <p align="center">
+  <img src="screenshots/anniversary.jpeg" width="220">
   <img src="screenshots/birthday.jpeg" width="220">
   <img src="screenshots/quotes.jpeg" width="220">
+</p>
+
+<p align="center">
   <img src="screenshots/little-games.jpeg" width="220">
   <img src="screenshots/memory-timeline.jpeg" width="220">
 </p>
+
 
 ## 🚀 Getting Started
 
