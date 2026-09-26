@@ -51,9 +51,22 @@ Cute Lovers was created as my **first Android application project** while learni
 
 The project focuses on creating a fun user experience rather than being a large-scale production application.
 
-## 📸 Screenshots
 
-Screenshots will be added here.
+## 📱 Screenshots
+
+<p align="center">
+  <img src="screenshots/01-logging-screen.png" width="220">
+  <img src="screenshots/02-home-screen.png" width="220">
+  <img src="screenshots/03-love-letters.png" width="220">
+  <img src="screenshots/04-anniversary.png" width="220">
+</p>
+
+<p align="center">
+  <img src="screenshots/05-birthday.png" width="220">
+  <img src="screenshots/06-quotes.png" width="220">
+  <img src="screenshots/07-little-games.png" width="220">
+  <img src="screenshots/08-memory-timeline.png" width="220">
+</p>
 
 ## 🚀 Getting Started
 
