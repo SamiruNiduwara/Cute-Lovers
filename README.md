@@ -54,8 +54,6 @@ The project focuses on creating a fun user experience rather than being a large-
 
 ## 📱 Screenshots
 
-## 📱 Screenshots
-
 <p align="center">
   <img src="screenshots/01-logging-screen.png" width="220">
   <img src="screenshots/02-home-screen.png" width="220">
