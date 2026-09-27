@@ -24,7 +24,9 @@ Keep track of important anniversaries and special dates.
 
 Select and manage important dates directly inside the application.
 
-### 🧠 Memory Timeline — add your special memories with note
+### 🧠 Memory Timeline 
+
+add your special memories with note
 
 ### 💕 50+ Love Quotes
 
