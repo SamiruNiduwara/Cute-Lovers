@@ -28,7 +28,7 @@ Select and manage important dates directly inside the application.
 
 ### 💕 50+ Love Quotes
 
-Users can easily **copy letters** and share or use them wherever they want.
+Users can easily **copy quotes** and share or use them wherever they want.
 
 ### 🧩 Word Puzzle Game
 
