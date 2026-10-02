@@ -80,22 +80,6 @@ The project focuses on creating a fun user experience rather than being a large-
 </p>
 
 
-## 🚀 Getting Started
-
-### Clone the repository
-
-```bash
-git clone https://github.com/SamiruNiduwara/Cute-Lovers.git
-```
-
-### Open the project
-
-Open the cloned project using **Android Studio**.
-
-### Build and run
-
-Allow Gradle to synchronize, connect an Android device or start an emulator, and run the application.
-
 ## 🔮 Future Improvements
 
 * More romantic letter categories
