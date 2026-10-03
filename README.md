@@ -55,6 +55,8 @@ The project focuses on creating a fun user experience rather than being a large-
 
 ## 📥 Download
 
+sha256:60dc41ee51bb696402cac8095a9b02b22a9bc09c28e8c74c54badbd1cb2f54cb
+
 **[⬇️ Download Cute Lovers v1.0.0](../../releases/latest)**
 
 > Download the latest APK from GitHub Releases and install it on your Android device.
