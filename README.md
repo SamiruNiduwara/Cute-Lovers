@@ -57,6 +57,7 @@ The project focuses on creating a fun user experience rather than being a large-
 
 [![Download APK](https://img.shields.io/badge/Download%20APK-Cute%20Lovers-pink?style=for-the-badge&logo=android&logoColor=white)](https://github.com/SamiruNinduwara/Cute-Lovers/releases/download/v1.0.0/Cute-Lovers-v1.0.0.apk)
 
+
 > Download the latest APK from GitHub Releases and install it on your Android device.
 
 
